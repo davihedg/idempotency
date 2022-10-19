@@ -13,7 +13,7 @@ class ReplayRequest
 
     public static function signature(Request $request): string
     {
-        $hashAlgo = 'md5';
+        $hashAlgo = config('replay.signature_hash_algo');
 
         return hash($hashAlgo, json_encode(
             [

@@ -82,4 +82,14 @@ return [
 
     'policy' => StripePolicy::class,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Signature Hash Algo
+    |--------------------------------------------------------------------------
+    |
+    | Request signature hashing algorithm
+    |
+    */
+
+    'signature_hash_algo' => 'md5'
 ];
