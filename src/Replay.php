@@ -6,6 +6,7 @@ namespace Bvtterfly\Replay;
 
 use Bvtterfly\Replay\Contracts\Policy;
 use Closure;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,36 +15,31 @@ class Replay
     public function __construct(
         private Policy $policy,
         private Storage $storage,
+        protected ReplayRequest $replayRequest
     ) {
     }
 
     public function handle(Request $request, Closure $next, ?string $cachePrefix = null): Response
     {
-        if (! config('replay.enabled')) {
+        if (! config('replay.enabled')
+            || ! $this->policy->isIdempotentRequest($request)) {
             return $next($request);
         }
 
-        if (! $this->policy->isIdempotentRequest($request)) {
-            return $next($request);
-        }
-
+        $this->validatedSignature($request);
         $key = $this->getCacheKey($request, $cachePrefix);
 
         if ($recordedResponse = ReplayResponse::find($key)) {
-            return $recordedResponse->toResponse(RequestHelper::signature($request));
+            return $recordedResponse->toResponse($this->replayRequest->signature($request));
         }
-        $lock = $this->storage->lock($key);
 
-        if (! $lock->get()) {
-            abort(Response::HTTP_CONFLICT, __('replay::responses.error_messages.already_in_progress'));
-        }
+        $lock = $this->checkResponseInProgress($key);
 
         try {
             $response = $next($request);
             if ($this->policy->isRecordableResponse($response)) {
-                ReplayResponse::save($key, RequestHelper::signature($request), $response);
+                ReplayResponse::save($key, $this->replayRequest->signature($request), $response);
             }
-
             return $response;
         } finally {
             $lock->release();
@@ -60,5 +56,22 @@ class Replay
     private function getIdempotencyKey(Request $request): string
     {
         return $request->header(config('replay.header_name'));
+    }
+
+    protected function checkResponseInProgress(string $key): Lock
+    {
+        $lock = $this->storage->lock($key);
+        if (! $lock->get()) {
+            abort(Response::HTTP_CONFLICT, __('replay::responses.error_messages.already_in_progress'));
+        }
+
+        return $lock;
+    }
+
+    protected function validatedSignature(Request $request): void
+    {
+        if (!$this->replayRequest->validatedSignature($request)) {
+            abort(Response::HTTP_BAD_REQUEST, __('replay::responses.error_messages.bad_idempotency_key'));
+        }
     }
 }

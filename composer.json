@@ -1,12 +1,12 @@
 {
-    "name": "bvtterfly/replay",
+    "name": "davihedg/idempotency",
     "description": "Laravel middleware for idempotency",
     "keywords": [
         "bvtterfly",
         "laravel",
         "replay"
     ],
-    "homepage": "https://github.com/bvtterfly/replay",
+    "homepage": "https://github.com/davihedg/idempotency",
     "license": "MIT",
     "authors": [
         {
