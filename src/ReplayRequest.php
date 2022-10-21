@@ -15,11 +15,14 @@ class ReplayRequest
     {
         $hashAlgo = config('replay.signature_hash_algo');
 
+        $bodyParam = $request->all();
+        ksort($bodyParam);
+
         return hash($hashAlgo, json_encode(
             [
                 $request->ip(),
                 $request->path(),
-                $request->all()
+                $bodyParam
             ]
         ));
     }
