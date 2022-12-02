@@ -7,11 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class ReplayRequest
 {
-    public function validatedSignature(Request $request): bool
-    {
-        return $request->header(config('replay.header_name')) == $this->signature($request);
-    }
-
     public static function signature(Request $request): string
     {
         $hashAlgo = config('replay.signature_hash_algo');
@@ -21,14 +16,12 @@ class ReplayRequest
 
         $signature = json_encode(
             [
-                $request->ip(),
                 $request->path(),
                 $bodyParam
             ]
         );
         $hash = hash($hashAlgo, json_encode(
             [
-                $request->ip(),
                 $request->path(),
                 $bodyParam
             ]
@@ -39,7 +32,6 @@ class ReplayRequest
 
         return hash($hashAlgo, json_encode(
             [
-                $request->ip(),
                 $request->path(),
                 $bodyParam
             ]

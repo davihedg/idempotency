@@ -26,7 +26,6 @@ class Replay
             return $next($request);
         }
 
-        $this->validatedSignature($request);
         $key = $this->getCacheKey($request, $cachePrefix);
 
         if ($recordedResponse = ReplayResponse::find($key)) {
@@ -66,12 +65,5 @@ class Replay
         }
 
         return $lock;
-    }
-
-    protected function validatedSignature(Request $request): void
-    {
-        if (!$this->replayRequest->validatedSignature($request)) {
-            abort(Response::HTTP_BAD_REQUEST, __('replay::responses.error_messages.bad_idempotency_key'));
-        }
     }
 }
