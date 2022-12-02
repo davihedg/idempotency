@@ -14,22 +14,6 @@ class ReplayRequest
         $bodyParam = $request->all();
         ksort($bodyParam);
 
-        $signature = json_encode(
-            [
-                $request->path(),
-                $bodyParam
-            ]
-        );
-        $hash = hash($hashAlgo, json_encode(
-            [
-                $request->path(),
-                $bodyParam
-            ]
-        ));
-
-        Log::info("request signature: $signature");
-        Log::info("hash signature: $hash");
-
         return hash($hashAlgo, json_encode(
             [
                 $request->path(),
