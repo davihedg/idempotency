@@ -30,7 +30,7 @@ it('dont replay if package is disabled', function () {
         'replay.enabled' => false,
     ]);
     $header = [
-        config('replay.header_name') => uniqid(),
+        config('replay.header_name') => uuid_create(),
     ];
     $res = post('resources', [], $header);
     $res->assertStatus(200);
@@ -69,7 +69,7 @@ it('replay idempotency requests', function () {
     })->middleware([Replay::class]);
 
     $header = [
-        config('replay.header_name') => uniqid(),
+        config('replay.header_name') => uuid_create(),
     ];
     $res = post('resources', [], $header);
     $res->assertStatus(200);
@@ -90,7 +90,7 @@ it('replay middleware with prefix key idempotency requests', function () {
     })->middleware([Replay::class.':prefix']);
 
     $header = [
-        config('replay.header_name') => $key = uniqid(),
+        config('replay.header_name') => $key = uuid_create(),
     ];
     $res = post('resources', [], $header);
     $res->assertStatus(200);
@@ -114,7 +114,7 @@ it('dont replay if responses is not idempotent.', function () {
     })->middleware([Replay::class]);
 
     $header = [
-        config('replay.header_name') => uniqid(),
+        config('replay.header_name') =>  uuid_create(),
     ];
     $res = post('resources', [], $header);
     $res->assertStatus(400);
@@ -133,8 +133,8 @@ it('response conflict in progress idempotency requests', function () {
     Route::post('resources', function () {
         return 'Created resource id :'.uniqid();
     })->middleware([Replay::class]);
-    $key = uniqid();
-    $key2 = uniqid();
+    $key = uuid_create();
+    $key2 = uuid_create();
     $lock = Storage::lock($key);
     $lock2 = Storage::lock($key2);
     $lock->get();
@@ -154,4 +154,20 @@ it('response conflict in progress idempotency requests', function () {
     $res2->assertSee('already in progress');
     $lock->release();
     $lock2->release();
+});
+
+
+it('dont replay if invalid idempotency key format', function () {
+    app()->instance(Policy::class, Mockery::mock(Policy::class, function (MockInterface $mock) {
+        $mock->shouldReceive('isIdempotentRequest')->andReturn(true);
+    }));
+    Route::post('resources', function () {
+        return 'Created resource id :'.uniqid();
+    })->middleware([Replay::class]);
+
+    $header = [
+        config('replay.header_name') => uniqid(),
+    ];
+    $res = post('resources', [], $header);
+    $res->assertStatus(400);
 });

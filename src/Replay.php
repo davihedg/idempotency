@@ -8,6 +8,7 @@ use Bvtterfly\Replay\Contracts\Policy;
 use Closure;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class Replay
@@ -48,6 +49,10 @@ class Replay
     private function getCacheKey(Request $request, ?string $prefix = null): string
     {
         $idempotencyKey = $this->getIdempotencyKey($request);
+
+        if (!Str::isUuid($idempotencyKey)) {
+            abort(Response::HTTP_BAD_REQUEST, __('replay::responses.error_messages.bad_key_format'));
+        }
 
         return $prefix ? "$prefix:$idempotencyKey" : $idempotencyKey;
     }
